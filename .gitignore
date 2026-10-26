@@ -1,0 +1,26 @@
+# Python generated files
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Local databases and SQLite journal files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Operating system files
+.DS_Store
+
+# Virtual environments
+venv/
+.venv/
+
+# IDE settings
+.vscode/
+.idea/
