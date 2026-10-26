@@ -1,0 +1,11 @@
+beautifulsoup4>=4.12
+matplotlib>=3.8
+newsapi-python>=0.2.7
+numpy>=1.26
+pandas>=2.1
+plotly>=5.18
+python-dotenv>=1.0
+requests>=2.31
+streamlit>=1.31
+vaderSentiment>=3.3.2
+yfinance>=0.2.36
