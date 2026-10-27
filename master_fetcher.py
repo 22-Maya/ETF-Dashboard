@@ -1,213 +1,364 @@
-import requests
-import sqlite3
+"""Collect news, SEC filings and latest prices for the configured holdings.
+
+Sources (each is optional and skipped when not configured):
+    * NewsAPI        - needs NEWSAPI_KEY
+    * Alpha Vantage  - needs ALPHA_VANTAGE_KEY
+    * SEC EDGAR      - needs a CIK in etf_holdings.json and SEC_USER_AGENT
+    * Yahoo Finance  - latest closes via yfinance (no key)
+
+Everything is stored in the local SQLite database (``etf_news.db``).
+"""
+
+from __future__ import annotations
+
 import json
+import logging
 import os
+import sqlite3
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
+
+import pandas as pd
+import requests
+import yfinance as yf
 from bs4 import BeautifulSoup
-from newsapi import NewsApiClient
 from dotenv import load_dotenv
+from newsapi import NewsApiClient
+
+from sentiment_utils import BASE_DIR, DB_PATH, get_connection
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
-newsapi    = NewsApiClient(api_key=os.getenv("NEWSAPI_KEY"))
-AV_KEY     = os.getenv("ALPHA_VANTAGE_KEY")
-HEADERS    = {"User-Agent": "etf-sentiment-bot contact@youremail.com"}
+CONFIG_PATH = BASE_DIR / "etf_holdings.json"
+REQUEST_TIMEOUT = 20  # seconds, applied to every HTTP request
+NEWS_DAYS_BACK = 3
+SEC_FILING_TYPE = "8-K"
+SEC_FILINGS_PER_TICKER = 5
+SEC_EXCERPT_CHARS = 1000
+SEC_PAUSE_SECONDS = 0.5  # SEC asks for <= 10 requests per second
+PER_TICKER_PAUSE_SECONDS = 1.0
 
-def load_holdings(config_path="etf_holdings.json"):
-    with open(config_path, "r") as f:
+NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
+ALPHA_VANTAGE_KEY = os.getenv("ALPHA_VANTAGE_KEY")
+SEC_USER_AGENT = os.getenv("SEC_USER_AGENT", "")
+
+
+class RateLimited(Exception):
+    """Raised when a data provider reports that its request quota is used up."""
+
+
+# ── Config and database ─────────────────────────────────────────────────────
+
+
+def load_holdings(config_path: Path | str = CONFIG_PATH) -> dict[str, dict]:
+    """Return ``{ticker: {"keywords": [...], "cik": "..."}}`` from the config."""
+    with open(config_path, encoding="utf-8") as f:
         return json.load(f)["holdings"]
 
-def setup_db():
-    conn = sqlite3.connect("etf_news.db")
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS articles (
-            id        INTEGER PRIMARY KEY AUTOINCREMENT,
-            ticker    TEXT,
-            headline  TEXT,
-            source    TEXT,
-            date      TEXT,
-            url       TEXT,
-            body      TEXT,
-            sentiment REAL DEFAULT NULL,
-            UNIQUE(ticker, headline)
-        )
-    """)
-    conn.commit()
-    conn.close()
-    print("Database ready.")
 
-def save_article(conn, ticker, headline, source, date, url, body):
+def setup_db() -> None:
+    """Create the tables used by the pipeline if they do not exist."""
+    with get_connection() as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS articles (
+                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticker    TEXT,
+                headline  TEXT,
+                source    TEXT,
+                date      TEXT,
+                url       TEXT,
+                body      TEXT,
+                sentiment REAL DEFAULT NULL,
+                UNIQUE(ticker, headline)
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS prices (
+                ticker     TEXT,
+                date       TEXT,
+                close      REAL,
+                pct_change REAL,
+                PRIMARY KEY (ticker, date)
+            )
+            """
+        )
+    logger.info("Database ready: %s", DB_PATH.name)
+
+
+def save_article(
+    conn: sqlite3.Connection,
+    ticker: str,
+    headline: str | None,
+    source: str | None,
+    date: str | None,
+    url: str | None,
+    body: str | None,
+) -> int:
+    """Insert one article; returns 1 if it was new and 0 if it was a duplicate."""
+    if not headline:
+        return 0
     try:
-        conn.execute("""
-            INSERT OR IGNORE INTO articles
-            (ticker, headline, source, date, url, body)
+        cursor = conn.execute(
+            """
+            INSERT OR IGNORE INTO articles (ticker, headline, source, date, url, body)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (ticker, headline, source, date, url, body or ""))
-        return conn.execute("SELECT changes()").fetchone()[0]
-    except Exception as e:
-        print(f"    Save error: {e}")
+            """,
+            (ticker, headline, source, date, url, body or ""),
+        )
+        return cursor.rowcount
+    except sqlite3.Error as exc:
+        logger.warning("Could not save article for %s: %s", ticker, exc)
         return 0
 
-def fetch_newsapi(ticker, keywords, days_back=3):
-    query     = " OR ".join(keywords)
-    from_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
-    conn      = sqlite3.connect("etf_news.db")
-    saved     = 0
 
+# ── Sources ─────────────────────────────────────────────────────────────────
+
+
+def fetch_newsapi(
+    client: NewsApiClient, ticker: str, keywords: list[str], days_back: int = NEWS_DAYS_BACK
+) -> int:
+    """Fetch recent NewsAPI articles for a ticker. Returns the number saved."""
+    from_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
     try:
-        response = newsapi.get_everything(
-            q=query,
+        response = client.get_everything(
+            q=" OR ".join(keywords),
             from_param=from_date,
             language="en",
             sort_by="publishedAt",
             page_size=20,
         )
+    except Exception as exc:  # the client raises several provider-specific errors
+        logger.warning("NewsAPI error for %s: %s", ticker, exc)
+        return 0
+
+    saved = 0
+    with get_connection() as conn:
         for item in response.get("articles", []):
             saved += save_article(
                 conn,
                 ticker,
-                item["title"],
-                item["source"]["name"],
-                item["publishedAt"][:10],
-                item["url"],
-                item.get("description", ""),
+                item.get("title"),
+                (item.get("source") or {}).get("name"),
+                (item.get("publishedAt") or "")[:10],
+                item.get("url"),
+                item.get("description"),
             )
-    except Exception as e:
-        print(f"    NewsAPI error: {e}")
-
-    conn.commit()
-    conn.close()
     return saved
 
-def fetch_alphavantage(ticker):
-    conn = sqlite3.connect("etf_news.db")
-    saved = 0
 
+def fetch_alphavantage(ticker: str) -> int:
+    """Fetch Alpha Vantage news for a ticker. Raises RateLimited when out of quota."""
     try:
         response = requests.get(
             "https://www.alphavantage.co/query",
             params={
                 "function": "NEWS_SENTIMENT",
-                "tickers":  ticker,
-                "limit":    50,
-                "apikey":   AV_KEY,
-            }
+                "tickers": ticker,
+                "limit": 50,
+                "apikey": ALPHA_VANTAGE_KEY,
+            },
+            timeout=REQUEST_TIMEOUT,
         )
         data = response.json()
+    except (requests.RequestException, ValueError) as exc:
+        logger.warning("Alpha Vantage error for %s: %s", ticker, exc)
+        return 0
+
+    # Alpha Vantage reports quota problems in the JSON body, not the HTTP status.
+    if "Note" in data or "Information" in data:
+        raise RateLimited(data.get("Note") or data.get("Information"))
+
+    saved = 0
+    with get_connection() as conn:
         for item in data.get("feed", []):
-            date_raw = item["time_published"][:8]
-            date_fmt = f"{date_raw[:4]}-{date_raw[4:6]}-{date_raw[6:]}"
+            raw = item.get("time_published", "")[:8]
+            date = f"{raw[:4]}-{raw[4:6]}-{raw[6:]}" if len(raw) == 8 else None
             saved += save_article(
                 conn,
                 ticker,
-                item["title"],
-                item["source"],
-                date_fmt,
-                item["url"],
-                item.get("summary", ""),
+                item.get("title"),
+                item.get("source"),
+                date,
+                item.get("url"),
+                item.get("summary"),
             )
-    except Exception as e:
-        print(f"    Alpha Vantage error: {e}")
-
-    conn.commit()
-    conn.close()
     return saved
 
-def fetch_sec(ticker, cik, filing_type="8-K", count=5):
-    cik_clean = str(cik).lstrip("0")
-    conn      = sqlite3.connect("etf_news.db")
-    saved     = 0
+
+def fetch_sec(
+    ticker: str,
+    cik: str,
+    filing_type: str = SEC_FILING_TYPE,
+    count: int = SEC_FILINGS_PER_TICKER,
+) -> int:
+    """Fetch recent SEC filings of one type and store a text excerpt of each."""
+    headers = {"User-Agent": SEC_USER_AGENT}
+    cik_plain = str(cik).lstrip("0")
 
     try:
         response = requests.get(
             f"https://data.sec.gov/submissions/CIK{str(cik).zfill(10)}.json",
-            headers=HEADERS
+            headers=headers,
+            timeout=REQUEST_TIMEOUT,
         )
         if response.status_code != 200:
+            logger.warning("SEC returned HTTP %s for %s", response.status_code, ticker)
             return 0
+        recent = response.json().get("filings", {}).get("recent", {})
+    except (requests.RequestException, ValueError) as exc:
+        logger.warning("SEC error for %s: %s", ticker, exc)
+        return 0
 
-        filings = response.json().get("filings", {}).get("recent", {})
-        forms   = filings.get("form", [])
-        dates   = filings.get("filingDate", [])
-        accnums = filings.get("accessionNumber", [])
-        docs    = filings.get("primaryDocument", [])
+    forms = recent.get("form", [])
+    dates = recent.get("filingDate", [])
+    accessions = recent.get("accessionNumber", [])
+    documents = recent.get("primaryDocument", [])
 
+    saved = 0
+    with get_connection() as conn:
         for i, form in enumerate(forms):
             if form != filing_type:
                 continue
             if saved >= count:
                 break
-
-            accnum  = accnums[i].replace("-", "")
-            doc_url = f"https://www.sec.gov/Archives/edgar/data/{cik_clean}/{accnum}/{docs[i]}"
-
+            doc_url = (
+                f"https://www.sec.gov/Archives/edgar/data/{cik_plain}/"
+                f"{accessions[i].replace('-', '')}/{documents[i]}"
+            )
             try:
-                soup    = BeautifulSoup(
-                    requests.get(doc_url, headers=HEADERS).text,
-                    "html.parser"
-                )
-                excerpt = soup.get_text(separator=" ", strip=True)[:1000]
-                saved  += save_article(
-                    conn,
-                    ticker,
-                    f"{ticker} {filing_type} filing — {dates[i]}",
-                    "SEC EDGAR",
-                    dates[i],
-                    doc_url,
-                    excerpt,
-                )
-                time.sleep(0.5)
-            except Exception as e:
-                print(f"    SEC filing error: {e}")
-
-    except Exception as e:
-        print(f"    SEC error: {e}")
-
-    conn.commit()
-    conn.close()
+                page = requests.get(doc_url, headers=headers, timeout=REQUEST_TIMEOUT)
+                text = BeautifulSoup(page.text, "html.parser").get_text(separator=" ", strip=True)[
+                    :SEC_EXCERPT_CHARS
+                ]
+            except requests.RequestException as exc:
+                logger.warning("SEC filing error for %s: %s", ticker, exc)
+                continue
+            saved += save_article(
+                conn,
+                ticker,
+                f"{ticker} {filing_type} filing — {dates[i]}",
+                "SEC EDGAR",
+                dates[i],
+                doc_url,
+                text,
+            )
+            time.sleep(SEC_PAUSE_SECONDS)
     return saved
 
-def print_summary():
-    conn = sqlite3.connect("etf_news.db")
-    rows = conn.execute("""
-        SELECT ticker, COUNT(*) as total,
-               SUM(CASE WHEN sentiment IS NULL THEN 1 ELSE 0 END) as unscored
-        FROM articles
-        GROUP BY ticker
-        ORDER BY total DESC
-    """).fetchall()
-    conn.close()
+
+def update_prices(tickers: list[str], period: str = "10d") -> int:
+    """Store recent closes and daily % change so the dashboard can show prices."""
+    try:
+        data = yf.download(
+            tickers, period=period, auto_adjust=True, progress=False, group_by="column"
+        )
+    except Exception as exc:
+        logger.warning("Price download failed: %s", exc)
+        return 0
+    if data.empty:
+        logger.warning("No price data returned by yfinance.")
+        return 0
+
+    close = data["Close"] if isinstance(data.columns, pd.MultiIndex) else data[["Close"]]
+    if not isinstance(data.columns, pd.MultiIndex):
+        close.columns = tickers[:1]
+    pct = close.pct_change() * 100.0
+
+    rows = []
+    for ticker in close.columns:
+        for date, value in close[ticker].dropna().items():
+            change = pct.at[date, ticker]
+            rows.append(
+                (
+                    ticker,
+                    date.strftime("%Y-%m-%d"),
+                    float(value),
+                    None if pd.isna(change) else float(change),
+                )
+            )
+
+    with get_connection() as conn:
+        conn.executemany(
+            "INSERT OR REPLACE INTO prices (ticker, date, close, pct_change) VALUES (?, ?, ?, ?)",
+            rows,
+        )
+    return len(rows)
+
+
+# ── Reporting and entry point ───────────────────────────────────────────────
+
+
+def print_summary() -> None:
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT ticker, COUNT(*) AS total,
+                   SUM(CASE WHEN sentiment IS NULL THEN 1 ELSE 0 END) AS unscored
+            FROM articles
+            GROUP BY ticker
+            ORDER BY total DESC
+            """
+        ).fetchall()
 
     print("\n--- Database summary ---")
     print(f"{'Ticker':<8} {'Total':>6} {'Unscored':>9}")
     print("-" * 26)
-    for row in rows:
-        print(f"{row[0]:<8} {row[1]:>6} {row[2]:>9}")
+    for ticker, total, unscored in rows:
+        print(f"{ticker:<8} {total:>6} {unscored:>9}")
 
-if __name__ == "__main__":
+
+def main() -> None:
     setup_db()
     holdings = load_holdings()
-    print(f"\nFetching data for: {list(holdings.keys())}\n")
+    logger.info("Fetching data for %d tickers", len(holdings))
+
+    news_client = NewsApiClient(api_key=NEWSAPI_KEY) if NEWSAPI_KEY else None
+    use_alpha_vantage = bool(ALPHA_VANTAGE_KEY)
+    if news_client is None:
+        logger.info("NEWSAPI_KEY not set - skipping NewsAPI.")
+    if not use_alpha_vantage:
+        logger.info("ALPHA_VANTAGE_KEY not set - skipping Alpha Vantage.")
+
+    use_sec = bool(SEC_USER_AGENT) and "example.com" not in SEC_USER_AGENT
+    if not use_sec:
+        logger.info(
+            "SEC_USER_AGENT not set to a real contact - skipping SEC EDGAR. "
+            "SEC requires a descriptive user agent with a contact email."
+        )
 
     for ticker, info in holdings.items():
-        keywords = info["keywords"]
-        cik      = info.get("cik")
-        print(f"[{ticker}]")
+        logger.info("[%s]", ticker)
 
-        n = fetch_newsapi(ticker, keywords)
-        print(f"  NewsAPI:       +{n} articles")
+        if news_client:
+            logger.info(
+                "  NewsAPI:       +%d articles",
+                fetch_newsapi(news_client, ticker, info["keywords"]),
+            )
 
-        a = fetch_alphavantage(ticker)
-        print(f"  Alpha Vantage: +{a} articles")
+        if use_alpha_vantage:
+            try:
+                logger.info("  Alpha Vantage: +%d articles", fetch_alphavantage(ticker))
+            except RateLimited as exc:
+                logger.warning(
+                    "  Alpha Vantage quota reached; skipping it for the rest of this run (%s)", exc
+                )
+                use_alpha_vantage = False
 
-        if cik:
-            s = fetch_sec(ticker, cik)
-            print(f"  SEC EDGAR:     +{s} filings")
-        else:
-            print(f"  SEC EDGAR:     skipped (no CIK)")
+        cik = info.get("cik")
+        if use_sec and cik:
+            logger.info("  SEC EDGAR:     +%d filings", fetch_sec(ticker, cik))
 
-        time.sleep(1)
+        time.sleep(PER_TICKER_PAUSE_SECONDS)
 
+    logger.info("Prices: %d rows stored", update_prices(list(holdings)))
     print_summary()
-    print("\nAll done. Run sentiment_scorer.py to score new articles.")
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    main()
