@@ -1,19 +1,19 @@
 {
   "names": {
-    "HON":  "Honeywell",
+    "HON": "Honeywell",
     "FBIN": "Fortune Brands Innovations",
     "ALLE": "Allegion",
     "REZI": "Resideo Technologies",
-    "MSA":  "MSA Safety",
-    "ADT":  "ADT Inc.",
+    "MSA": "MSA Safety",
+    "ADT": "ADT Inc.",
     "ALRM": "Alarm.com",
     "NSSC": "Napco Security Technologies",
-    "BCO":  "Brinks Company",
+    "BCO": "Brinks Company",
     "ARLO": "Arlo Technologies",
-    "JCI":  "Johnson Controls",
-    "MSI":  "Motorola Solutions",
-    "IOT":  "Samsara",
-    "YOU":  "Clear Secure",
+    "JCI": "Johnson Controls",
+    "MSI": "Motorola Solutions",
+    "IOT": "Samsara",
+    "YOU": "Clear Secure",
     "MITK": "Mitek Systems",
     "AWRE": "Aware Inc.",
     "AUID": "authID",
@@ -24,58 +24,309 @@
     "CGNX": "Cognex",
     "AMBA": "Ambarella",
     "MBLY": "Mobileye",
-    "TDY":  "Teledyne",
+    "TDY": "Teledyne",
     "KTOS": "Kratos Defense",
     "AVAV": "AeroVironment",
     "PLTR": "Palantir",
-    "LIF":  "Life360"
+    "LIF": "Life360",
+    "CARR": "Carrier Global",
+    "ITRN": "Itron",
+    "CDRE": "Cadre Holdings",
+    "UI": "Ubiquiti",
+    "APG": "APi Group"
   },
   "etfs": {
     "PTEQ": {
-      "name":        "Physical and Digital Security ETF",
-      "emoji":       "🔒",
+      "name": "Physical and Digital Security ETF",
       "description": "Companies generating meaningful revenue from access control, biometric identity, video surveillance, and connected security infrastructure.",
       "categories": {
-        "Physical Access Control and Locks":            ["HON", "FBIN", "ALLE", "REZI", "MSA"],
-        "Monitoring Alarm and Security Services":       ["ADT", "ALRM", "NSSC", "BCO", "ARLO"],
-        "Building Security and Smart Infrastructure":   ["JCI", "MSI", "IOT"],
-        "Identity Biometrics and Access Verification":  ["YOU", "MITK", "AWRE", "AUID", "SYNA", "OKTA"],
-        "Threat Detection and Screening":               ["EVLV", "AXON"],
-        "Vision Sensing and AI Hardware":               ["CGNX", "AMBA", "MBLY", "TDY"],
-        "Defense Intelligence and Autonomous Systems":  ["KTOS", "AVAV", "PLTR"],
-        "Personal and Family Safety":                   ["LIF"]
+        "Physical Access Control and Locks": [
+          "HON",
+          "FBIN",
+          "ALLE",
+          "REZI",
+          "MSA"
+        ],
+        "Monitoring Alarm and Security Services": [
+          "ADT",
+          "ALRM",
+          "NSSC",
+          "BCO",
+          "ARLO",
+          "ITRN",
+          "UI"
+        ],
+        "Building Security and Smart Infrastructure": [
+          "JCI",
+          "MSI",
+          "IOT",
+          "CARR",
+          "APG"
+        ],
+        "Identity Biometrics and Access Verification": [
+          "YOU",
+          "MITK",
+          "AWRE",
+          "AUID",
+          "SYNA",
+          "OKTA"
+        ],
+        "Threat Detection and Screening": [
+          "EVLV",
+          "AXON"
+        ],
+        "Vision Sensing and AI Hardware": [
+          "CGNX",
+          "AMBA",
+          "MBLY",
+          "TDY"
+        ],
+        "Defense Intelligence and Autonomous Systems": [
+          "KTOS",
+          "AVAV",
+          "PLTR",
+          "CDRE"
+        ],
+        "Personal and Family Safety": [
+          "LIF"
+        ]
       }
     }
   },
   "holdings": {
-    "HON":  { "keywords": ["Honeywell", "HON"], "cik": "0000773840" },
-    "FBIN": { "keywords": ["Fortune Brands Innovations", "FBIN"], "cik": "0001519751" },
-    "ALLE": { "keywords": ["Allegion", "ALLE"], "cik": "0001579241" },
-    "REZI": { "keywords": ["Resideo Technologies", "REZI"], "cik": "0001740332" },
-    "MSA":  { "keywords": ["MSA Safety", "MSA"], "cik": "0000066570" },
-    "ADT":  { "keywords": ["ADT", "ADT security"], "cik": "0001703056" },
-    "ALRM": { "keywords": ["Alarm.com", "ALRM"], "cik": "0001461219" },
-    "NSSC": { "keywords": ["Napco Security", "NSSC"], "cik": "0000069633" },
-    "BCO":  { "keywords": ["Brinks Company", "BCO"], "cik": "0000078814" },
-    "ARLO": { "keywords": ["Arlo Technologies", "ARLO"], "cik": "0001736946" },
-    "JCI":  { "keywords": ["Johnson Controls", "JCI"], "cik": "0000833444" },
-    "MSI":  { "keywords": ["Motorola Solutions", "MSI"], "cik": "0000068505" },
-    "IOT":  { "keywords": ["Samsara", "IOT"], "cik": "0001828108" },
-    "YOU":  { "keywords": ["Clear Secure", "YOU"], "cik": "0001820175" },
-    "MITK": { "keywords": ["Mitek Systems", "MITK"], "cik": "0000807863" },
-    "AWRE": { "keywords": ["Aware Inc", "AWRE"], "cik": "0001060349" },
-    "AUID": { "keywords": ["authID", "AUID"], "cik": "0001504747" },
-    "SYNA": { "keywords": ["Synaptics", "SYNA"], "cik": "0000817720" },
-    "OKTA": { "keywords": ["Okta", "OKTA"], "cik": "0001660134" },
-    "EVLV": { "keywords": ["Evolv Technology", "EVLV"], "cik": "0001819989" },
-    "AXON": { "keywords": ["Axon Enterprise", "AXON", "Taser"], "cik": "0001069183" },
-    "CGNX": { "keywords": ["Cognex", "CGNX"], "cik": "0000851205" },
-    "AMBA": { "keywords": ["Ambarella", "AMBA"], "cik": "0001280452" },
-    "MBLY": { "keywords": ["Mobileye", "MBLY"], "cik": "0001828937" },
-    "TDY":  { "keywords": ["Teledyne", "TDY"], "cik": "0001039065" },
-    "KTOS": { "keywords": ["Kratos Defense", "KTOS"], "cik": "0000893987" },
-    "AVAV": { "keywords": ["AeroVironment", "AVAV"], "cik": "0001140530" },
-    "PLTR": { "keywords": ["Palantir", "PLTR"], "cik": "0001321655" },
-    "LIF":  { "keywords": ["Life360", "LIF"], "cik": "0001581760" }
+    "HON": {
+      "keywords": [
+        "Honeywell",
+        "HON"
+      ],
+      "cik": "0000773840"
+    },
+    "FBIN": {
+      "keywords": [
+        "Fortune Brands Innovations",
+        "FBIN"
+      ],
+      "cik": "0001519751"
+    },
+    "ALLE": {
+      "keywords": [
+        "Allegion",
+        "ALLE"
+      ],
+      "cik": "0001579241"
+    },
+    "REZI": {
+      "keywords": [
+        "Resideo Technologies",
+        "REZI"
+      ],
+      "cik": "0001740332"
+    },
+    "MSA": {
+      "keywords": [
+        "MSA Safety",
+        "MSA"
+      ],
+      "cik": "0000066570"
+    },
+    "ADT": {
+      "keywords": [
+        "ADT",
+        "ADT security"
+      ],
+      "cik": "0001703056"
+    },
+    "ALRM": {
+      "keywords": [
+        "Alarm.com",
+        "ALRM"
+      ],
+      "cik": "0001461219"
+    },
+    "NSSC": {
+      "keywords": [
+        "Napco Security",
+        "NSSC"
+      ],
+      "cik": "0000069633"
+    },
+    "BCO": {
+      "keywords": [
+        "Brinks Company",
+        "BCO"
+      ],
+      "cik": "0000078814"
+    },
+    "ARLO": {
+      "keywords": [
+        "Arlo Technologies",
+        "ARLO"
+      ],
+      "cik": "0001736946"
+    },
+    "JCI": {
+      "keywords": [
+        "Johnson Controls",
+        "JCI"
+      ],
+      "cik": "0000833444"
+    },
+    "MSI": {
+      "keywords": [
+        "Motorola Solutions",
+        "MSI"
+      ],
+      "cik": "0000068505"
+    },
+    "IOT": {
+      "keywords": [
+        "Samsara",
+        "IOT"
+      ],
+      "cik": "0001828108"
+    },
+    "YOU": {
+      "keywords": [
+        "Clear Secure",
+        "YOU"
+      ],
+      "cik": "0001820175"
+    },
+    "MITK": {
+      "keywords": [
+        "Mitek Systems",
+        "MITK"
+      ],
+      "cik": "0000807863"
+    },
+    "AWRE": {
+      "keywords": [
+        "Aware Inc",
+        "AWRE"
+      ],
+      "cik": "0001060349"
+    },
+    "AUID": {
+      "keywords": [
+        "authID",
+        "AUID"
+      ],
+      "cik": "0001504747"
+    },
+    "SYNA": {
+      "keywords": [
+        "Synaptics",
+        "SYNA"
+      ],
+      "cik": "0000817720"
+    },
+    "OKTA": {
+      "keywords": [
+        "Okta",
+        "OKTA"
+      ],
+      "cik": "0001660134"
+    },
+    "EVLV": {
+      "keywords": [
+        "Evolv Technology",
+        "EVLV"
+      ],
+      "cik": "0001819989"
+    },
+    "AXON": {
+      "keywords": [
+        "Axon Enterprise",
+        "AXON",
+        "Taser"
+      ],
+      "cik": "0001069183"
+    },
+    "CGNX": {
+      "keywords": [
+        "Cognex",
+        "CGNX"
+      ],
+      "cik": "0000851205"
+    },
+    "AMBA": {
+      "keywords": [
+        "Ambarella",
+        "AMBA"
+      ],
+      "cik": "0001280452"
+    },
+    "MBLY": {
+      "keywords": [
+        "Mobileye",
+        "MBLY"
+      ],
+      "cik": "0001828937"
+    },
+    "TDY": {
+      "keywords": [
+        "Teledyne",
+        "TDY"
+      ],
+      "cik": "0001039065"
+    },
+    "KTOS": {
+      "keywords": [
+        "Kratos Defense",
+        "KTOS"
+      ],
+      "cik": "0000893987"
+    },
+    "AVAV": {
+      "keywords": [
+        "AeroVironment",
+        "AVAV"
+      ],
+      "cik": "0001140530"
+    },
+    "PLTR": {
+      "keywords": [
+        "Palantir",
+        "PLTR"
+      ],
+      "cik": "0001321655"
+    },
+    "LIF": {
+      "keywords": [
+        "Life360",
+        "LIF"
+      ],
+      "cik": "0001581760"
+    },
+    "CARR": {
+      "keywords": [
+        "Carrier Global",
+        "CARR"
+      ]
+    },
+    "ITRN": {
+      "keywords": [
+        "Itron",
+        "ITRN"
+      ]
+    },
+    "CDRE": {
+      "keywords": [
+        "Cadre Holdings",
+        "CDRE"
+      ]
+    },
+    "UI": {
+      "keywords": [
+        "Ubiquiti",
+        "UI"
+      ]
+    },
+    "APG": {
+      "keywords": [
+        "APi Group",
+        "APG"
+      ]
+    }
   }
 }
