@@ -1,3 +1,11 @@
+"""Build the PTEQ portfolio index, compare it with benchmark ETFs, and export charts.
+
+Run from anywhere with ``python etf_charts.py``. Outputs (PNG charts, CSV
+summaries and ``run_info.json``) are written to ``etf_output/``. Portfolio
+construction and all metrics live in ``analytics.py``; this file handles data
+download, input files, and plotting.
+"""
+
 from __future__ import annotations
 
 import json
@@ -53,8 +61,7 @@ REBALANCE_LABELS = {"M": "Monthly", "Q": "Quarterly", "Y": "Annual", "A": "Annua
 
 ACCENT = "#0057B8"  # the portfolio is always drawn in this blue
 MUTED = "#BDBDBD"
-
-# Benchmarks use distinct hues so the legend is readable.
+# Benchmarks use distinct, colour-blind-friendly hues so the legend is readable.
 COLORS = {
     PORTFOLIO_NAME: ACCENT,
     "SPY": "#555555",
