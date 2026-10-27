@@ -1,35 +1,35 @@
-ticker,theme,bucket
-MSI,Response,Core
-HON,Buildings,Core
-ALLE,Access,Core
-ALRM,Monitoring,Core
-TDY,Detection,Core
-MSA,Detection,Core
-ADT,Monitoring,Core
-IOT,Monitoring,Core
-AXON,Response,Supporting
-JCI,Buildings,Supporting
-LIF,Response,Supporting
-OKTA,Identity,Supporting
-YOU,Identity,Supporting
-EVLV,Detection,Supporting
-NSSC,Monitoring,Supporting
-KTOS,Response,Supporting
-AVAV,Response,Supporting
-CARR,Buildings,Thematic
-BCO,Monitoring,Thematic
-REZI,Buildings,Thematic
-CGNX,Detection,Thematic
-MBLY,Detection,Thematic
-ARLO,Monitoring,Thematic
-MITK,Identity,Thematic
-SYNA,Identity,Thematic
-PLTR,Response,Thematic
-FBIN,Access,Thematic
-AMBA,Detection,Thematic
-UBNT,Monitoring,Thematic
-CDRE,Response,Thematic
-APG,Buildings,Thematic
-ITRN,Monitoring,Thematic
-AWRE,Identity,Thematic
-AUID,Identity,Thematic
+ticker,theme,bucket,sector
+MSI,Response,Core,Electronic Equipment
+HON,Buildings,Core,Building Products & Industrials
+ALLE,Access,Core,Building Products & Industrials
+ALRM,Monitoring,Core,Software
+TDY,Detection,Core,Electronic Equipment
+MSA,Detection,Core,Building Products & Industrials
+ADT,Monitoring,Core,Security & Commercial Services
+IOT,Monitoring,Core,Software
+AXON,Response,Supporting,Aerospace & Defense
+JCI,Buildings,Supporting,Building Products & Industrials
+LIF,Response,Supporting,Software
+OKTA,Identity,Supporting,Software
+YOU,Identity,Supporting,Security & Commercial Services
+EVLV,Detection,Supporting,Electronic Equipment
+NSSC,Monitoring,Supporting,Electronic Equipment
+KTOS,Response,Supporting,Aerospace & Defense
+AVAV,Response,Supporting,Aerospace & Defense
+CARR,Buildings,Thematic,Building Products & Industrials
+BCO,Monitoring,Thematic,Security & Commercial Services
+REZI,Buildings,Thematic,Building Products & Industrials
+CGNX,Detection,Thematic,Electronic Equipment
+MBLY,Detection,Thematic,Semiconductors
+ARLO,Monitoring,Thematic,Electronic Equipment
+MITK,Identity,Thematic,Software
+SYNA,Identity,Thematic,Semiconductors
+PLTR,Response,Thematic,Software
+FBIN,Access,Thematic,Building Products & Industrials
+AMBA,Detection,Thematic,Semiconductors
+UI,Monitoring,Thematic,Electronic Equipment
+CDRE,Response,Thematic,Aerospace & Defense
+APG,Buildings,Thematic,Security & Commercial Services
+ITRN,Monitoring,Thematic,Electronic Equipment
+AWRE,Identity,Thematic,Software
+AUID,Identity,Thematic,Software
