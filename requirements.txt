@@ -6,6 +6,6 @@ pandas>=2.1
 plotly>=5.18
 python-dotenv>=1.0
 requests>=2.31
-streamlit>=1.31
+streamlit>=1.50
 vaderSentiment>=3.3.2
 yfinance>=0.2.36
