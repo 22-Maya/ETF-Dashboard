@@ -2,7 +2,6 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
-etf_output/
 
 # Environment variables and secrets
 .env
@@ -14,6 +13,10 @@ etf_output/
 *.db-journal
 *.sqlite
 *.sqlite3
+
+# Test and lint caches
+.pytest_cache/
+.ruff_cache/
 
 # Operating system files
 .DS_Store
