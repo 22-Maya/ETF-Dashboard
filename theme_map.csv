@@ -1,19 +1,19 @@
 ticker,theme,bucket,sector
-MSI,Response,Core,Electronic Equipment
+MSI,Access,Core,Electronic Equipment
 HON,Buildings,Core,Building Products & Industrials
 ALLE,Access,Core,Building Products & Industrials
 ALRM,Monitoring,Core,Software
 TDY,Detection,Core,Electronic Equipment
 MSA,Detection,Core,Building Products & Industrials
 ADT,Monitoring,Core,Security & Commercial Services
-IOT,Monitoring,Core,Software
+IOT,Access,Core,Software
 AXON,Response,Supporting,Aerospace & Defense
 JCI,Buildings,Supporting,Building Products & Industrials
 LIF,Response,Supporting,Software
 OKTA,Identity,Supporting,Software
 YOU,Identity,Supporting,Security & Commercial Services
 EVLV,Detection,Supporting,Electronic Equipment
-NSSC,Monitoring,Supporting,Electronic Equipment
+NSSC,Access,Supporting,Electronic Equipment
 KTOS,Response,Supporting,Aerospace & Defense
 AVAV,Response,Supporting,Aerospace & Defense
 CARR,Buildings,Thematic,Building Products & Industrials
