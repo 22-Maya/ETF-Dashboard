@@ -32,22 +32,33 @@ Two connected workflows share one set of holdings:
 
 ```text
 ETF-Dashboard/
-├── analytics.py            # Portfolio construction and metrics (pure functions, unit-tested)
-├── etf_charts.py           # Data download, chart export, CSV summaries
-├── dashboard.py            # Streamlit dashboard
-├── master_fetcher.py       # News, filing and price ingestion into SQLite
-├── sentiment_scorer.py     # VADER scoring and summary
-├── sentiment_utils.py      # Shared DB access, labels and summary query
-├── etf_holdings.json       # ETF universe, categories, news keywords and SEC CIKs
-├── holdings.csv            # Target portfolio weights
-├── theme_map.csv           # Theme, bucket and sector for each holding
-├── peer_holdings.csv       # Peer ETF constituents for the overlap chart
-├── etf_output/             # Generated charts, CSV summaries and run_info.json
-├── docs/methodology.md     # Methodology and limitations
-├── tests/                  # pytest suite
-├── .env.example            # Environment variable template
-├── requirements.txt        # Runtime dependencies
-└── requirements-dev.txt    # Adds pytest and ruff
+├── analytics.py           # Portfolio construction and metrics (pure functions, unit-tested)
+├── etf_charts.py          # Data download, chart export, CSV summaries
+├── dashboard.py           # Streamlit dashboard
+├── master_fetcher.py      # News, filing and price ingestion into SQLite
+├── sentiment_scorer.py    # VADER scoring and summary
+├── sentiment_utils.py     # Shared DB access, labels and summary query
+├── etf_holdings.json      # ETF universe, categories, news keywords and SEC CIKs
+├── holdings.csv           # Target portfolio weights
+├── theme_map.csv          # Theme, bucket and sector for each holding
+├── peer_holdings.csv      # Peer ETF constituents for the overlap chart
+├── etf_output/            # Generated charts, CSV summaries and run_info.json
+├── docs/
+│   └── methodology.md     # Methodology, metric definitions and limitations
+├── tests/                 # pytest suite
+│   ├── conftest.py        # Makes the project modules importable in tests
+│   ├── test_analytics.py  # Portfolio construction and metric tests
+│   ├── test_sentiment.py  # Database, scoring and ingestion tests
+│   └── test_dashboard.py  # Streamlit smoke tests
+├── .github/
+│   └── workflows/
+│       └── ci.yml         # GitHub Actions: lint and test on every push
+├── .env.example           # Environment variable template
+├── .gitignore             # Files excluded from version control
+├── pyproject.toml         # Ruff and pytest configuration
+├── requirements.txt       # Runtime dependencies
+├── requirements-dev.txt   # Adds pytest and ruff
+└── README.md              # Project overview
 ```
 
 ## Setup
