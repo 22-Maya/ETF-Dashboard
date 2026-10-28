@@ -16,7 +16,7 @@ import logging
 import os
 import sqlite3
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -41,7 +41,8 @@ SEC_PAUSE_SECONDS = 0.5  # SEC asks for <= 10 requests per second
 PER_TICKER_PAUSE_SECONDS = 1.0
 
 NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
-ALPHA_VANTAGE_KEY = os.getenv("ALPHA_VANTAGE_KEY")
+FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY")
+FINNHUB_MAX_ARTICLES = 25  # newest articles kept per ticker per run
 SEC_USER_AGENT = os.getenv("SEC_USER_AGENT", "")
 
 
@@ -150,45 +151,50 @@ def fetch_newsapi(
             )
     return saved
 
-
-def fetch_alphavantage(ticker: str) -> int:
-    """Fetch Alpha Vantage news for a ticker. Raises RateLimited when out of quota."""
+def fetch_finnhub(ticker: str, days_back: int = NEWS_DAYS_BACK) -> int:
+    """Fetch recent Finnhub company news. Raises RateLimited on HTTP 429."""
+    now = datetime.now()
     try:
         response = requests.get(
-            "https://www.alphavantage.co/query",
+            "https://finnhub.io/api/v1/company-news",
             params={
-                "function": "NEWS_SENTIMENT",
-                "tickers": ticker,
-                "limit": 50,
-                "apikey": ALPHA_VANTAGE_KEY,
+                "symbol": ticker,
+                "from": (now - timedelta(days=days_back)).strftime("%Y-%m-%d"),
+                "to": now.strftime("%Y-%m-%d"),
             },
+            headers={"X-Finnhub-Token": FINNHUB_API_KEY},
             timeout=REQUEST_TIMEOUT,
         )
-        data = response.json()
-    except (requests.RequestException, ValueError) as exc:
-        logger.warning("Alpha Vantage error for %s: %s", ticker, exc)
+    except requests.RequestException as exc:
+        logger.warning("Finnhub error for %s: %s", ticker, exc)
         return 0
 
-    # Alpha Vantage reports quota problems in the JSON body, not the HTTP status.
-    if "Note" in data or "Information" in data:
-        raise RateLimited(data.get("Note") or data.get("Information"))
+    if response.status_code == 429:
+        raise RateLimited("Finnhub rate limit reached")
+    if response.status_code != 200:
+        logger.warning("Finnhub returned HTTP %s for %s", response.status_code, ticker)
+        return 0
+    try:
+        items = response.json()
+    except ValueError:
+        return 0
+    if not isinstance(items, list):
+        return 0
 
     saved = 0
     with get_connection() as conn:
-        for item in data.get("feed", []):
-            raw = item.get("time_published", "")[:8]
-            date = f"{raw[:4]}-{raw[4:6]}-{raw[6:]}" if len(raw) == 8 else None
+        for item in items[:FINNHUB_MAX_ARTICLES]:
+            timestamp = item.get("datetime")  # Unix seconds
+            date = (
+                datetime.fromtimestamp(timestamp, tz=UTC).strftime("%Y-%m-%d")
+                if timestamp
+                else None
+            )
             saved += save_article(
-                conn,
-                ticker,
-                item.get("title"),
-                item.get("source"),
-                date,
-                item.get("url"),
-                item.get("summary"),
+                conn, ticker, item.get("headline"), item.get("source"),
+                date, item.get("url"), item.get("summary"),
             )
     return saved
-
 
 def fetch_sec(
     ticker: str,
@@ -340,14 +346,13 @@ def main() -> None:
                 fetch_newsapi(news_client, ticker, info["keywords"]),
             )
 
-        if use_alpha_vantage:
-            try:
-                logger.info("  Alpha Vantage: +%d articles", fetch_alphavantage(ticker))
-            except RateLimited as exc:
-                logger.warning(
-                    "  Alpha Vantage quota reached; skipping it for the rest of this run (%s)", exc
-                )
-                use_alpha_vantage = False
+        if use_finnhub:
+		try:
+                	logger.info("  Finnhub:       +%d articles", fetch_finnhub(ticker))
+            	except RateLimited as exc:
+                	logger.warning("  Finnhub rate limit reached; skipping it for the "
+                               	"rest of this run (%s)", exc)
+                	use_finnhub = False
 
         cik = info.get("cik")
         if use_sec and cik:

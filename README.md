@@ -132,7 +132,7 @@ Read [`docs/methodology.md`](docs/methodology.md) before interpreting any chart 
 
 ## Tech stack
 
-Python · pandas · NumPy · Matplotlib · Plotly · Streamlit · SQLite · yfinance · VADER Sentiment · NewsAPI · Alpha Vantage · SEC EDGAR · pytest · Ruff
+Python · pandas · NumPy · Matplotlib · Plotly · Streamlit · SQLite · yfinance · VADER Sentiment · NewsAPI · Finnhub · SEC EDGAR · pytest · Ruff
 
 ## Disclaimer
 

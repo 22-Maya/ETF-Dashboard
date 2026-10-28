@@ -431,7 +431,7 @@ def main() -> None:
         render_performance_tab()
 
     st.divider()
-    st.caption("Data: NewsAPI · Alpha Vantage · SEC EDGAR · Yahoo Finance · VADER Sentiment")
+    st.caption("Data: NewsAPI · Finnhub · SEC EDGAR · Yahoo Finance · VADER Sentiment")
 
 
 main()
