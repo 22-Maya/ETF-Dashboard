@@ -2,7 +2,7 @@
 
 Sources (each is optional and skipped when not configured):
     * NewsAPI        - needs NEWSAPI_KEY
-    * Alpha Vantage  - needs ALPHA_VANTAGE_KEY
+    * Finnhub        - needs FINNHUB_API_KEY
     * SEC EDGAR      - needs a CIK in etf_holdings.json and SEC_USER_AGENT
     * Yahoo Finance  - latest closes via yfinance (no key)
 
@@ -151,6 +151,7 @@ def fetch_newsapi(
             )
     return saved
 
+
 def fetch_finnhub(ticker: str, days_back: int = NEWS_DAYS_BACK) -> int:
     """Fetch recent Finnhub company news. Raises RateLimited on HTTP 429."""
     now = datetime.now()
@@ -195,6 +196,7 @@ def fetch_finnhub(ticker: str, days_back: int = NEWS_DAYS_BACK) -> int:
                 date, item.get("url"), item.get("summary"),
             )
     return saved
+
 
 def fetch_sec(
     ticker: str,
@@ -324,11 +326,11 @@ def main() -> None:
     logger.info("Fetching data for %d tickers", len(holdings))
 
     news_client = NewsApiClient(api_key=NEWSAPI_KEY) if NEWSAPI_KEY else None
-    use_alpha_vantage = bool(ALPHA_VANTAGE_KEY)
+    use_finnhub = bool(FINNHUB_API_KEY)
     if news_client is None:
         logger.info("NEWSAPI_KEY not set - skipping NewsAPI.")
-    if not use_alpha_vantage:
-        logger.info("ALPHA_VANTAGE_KEY not set - skipping Alpha Vantage.")
+    if not use_finnhub:
+        logger.info("FINNHUB_API_KEY not set - skipping Finnhub.")
 
     use_sec = bool(SEC_USER_AGENT) and "example.com" not in SEC_USER_AGENT
     if not use_sec:
@@ -347,12 +349,13 @@ def main() -> None:
             )
 
         if use_finnhub:
-		try:
-                	logger.info("  Finnhub:       +%d articles", fetch_finnhub(ticker))
-            	except RateLimited as exc:
-                	logger.warning("  Finnhub rate limit reached; skipping it for the "
-                               	"rest of this run (%s)", exc)
-                	use_finnhub = False
+            try:
+                logger.info("  Finnhub:       +%d articles", fetch_finnhub(ticker))
+            except RateLimited as exc:
+                logger.warning(
+                    "  Finnhub rate limit reached; skipping it for the rest of this run (%s)", exc
+                )
+                use_finnhub = False
 
         cik = info.get("cik")
         if use_sec and cik:
