@@ -126,3 +126,56 @@ def test_update_prices_stores_close_and_pct_change(db, monkeypatch):
 def test_update_prices_handles_empty_download(db, monkeypatch):
     monkeypatch.setattr(mf.yf, "download", lambda *a, **k: pd.DataFrame())
     assert mf.update_prices(["AAA"]) == 0
+
+
+class FakeResponse:
+    def __init__(self, status_code=200, payload=None):
+        self.status_code = status_code
+        self._payload = payload
+
+    def json(self):
+        if self._payload is None:
+            raise ValueError("no json")
+        return self._payload
+
+
+def test_fetch_finnhub_parses_and_dedupes(db, monkeypatch):
+    payload = [
+        {
+            "headline": "Honeywell wins contract",
+            "source": "Reuters",
+            "datetime": 1767225600,
+            "url": "https://x/1",
+            "summary": "Big win",
+        },
+        {
+            "headline": "Honeywell wins contract",
+            "source": "Reuters",
+            "datetime": 1767225600,
+            "url": "https://x/1",
+            "summary": "Big win",
+        },
+        {"headline": "No timestamp item", "source": "Wire", "url": "https://x/2", "summary": ""},
+        {"headline": "", "source": "Wire", "datetime": 1767225600},
+    ]
+    monkeypatch.setattr(mf, "FINNHUB_API_KEY", "token")
+    monkeypatch.setattr(mf.requests, "get", lambda *a, **k: FakeResponse(200, payload))
+
+    assert mf.fetch_finnhub("HON") == 2
+    with su.get_connection() as conn:
+        rows = conn.execute("SELECT headline, date FROM articles ORDER BY id").fetchall()
+    assert rows[0] == ("Honeywell wins contract", "2026-01-01")
+    assert rows[1][1] is None
+
+
+def test_fetch_finnhub_rate_limit_and_errors(db, monkeypatch):
+    monkeypatch.setattr(mf, "FINNHUB_API_KEY", "token")
+    monkeypatch.setattr(mf.requests, "get", lambda *a, **k: FakeResponse(429))
+    with pytest.raises(mf.RateLimited):
+        mf.fetch_finnhub("HON")
+
+    monkeypatch.setattr(mf.requests, "get", lambda *a, **k: FakeResponse(500))
+    assert mf.fetch_finnhub("HON") == 0
+
+    monkeypatch.setattr(mf.requests, "get", lambda *a, **k: FakeResponse(200, {"error": "bad"}))
+    assert mf.fetch_finnhub("HON") == 0
